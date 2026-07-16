@@ -116,6 +116,68 @@ def _ecdf(a: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return xs, ys
 
 
+def make_scenario_density_figure(
+    *,
+    scenario_samples: np.ndarray,
+    generated: np.ndarray,
+    scenario_id: int,
+) -> Figure:
+    """Overlaid histogram and KDE for scenario vs generated samples.
+
+    Unlike `make_density_figure`, there is no theoretical MFTR curve here
+    because the scenario distribution is empirical. Both distributions are
+    rendered with low alpha histograms and solid KDE lines so they are easy
+    to compare visually.
+    """
+    _apply_style()
+    fig = Figure(figsize=(5.9, 4.4), dpi=150)
+    ax = fig.add_subplot(1, 1, 1)
+
+    sns.histplot(
+        scenario_samples,
+        ax=ax,
+        stat="density",
+        color=PALETTE["real"],
+        alpha=0.18,
+        bins=70,
+        edgecolor=PALETTE["real"],
+        linewidth=0.4,
+        label=f"Scenario {scenario_id}",
+    )
+    sns.kdeplot(
+        scenario_samples,
+        ax=ax,
+        color=PALETTE["real"],
+        linewidth=2.2,
+        label=f"Scenario {scenario_id} KDE",
+    )
+    sns.histplot(
+        generated,
+        ax=ax,
+        stat="density",
+        color=PALETTE["gen"],
+        alpha=0.18,
+        bins=70,
+        edgecolor=PALETTE["gen"],
+        linewidth=0.4,
+        label="Generated",
+    )
+    sns.kdeplot(
+        generated,
+        ax=ax,
+        color=PALETTE["gen"],
+        linewidth=2.2,
+        label="Generated KDE",
+    )
+
+    ax.set_xlabel("Envelope")
+    ax.set_ylabel("Density")
+    ax.legend(loc="best")
+    ax.grid(alpha=0.35)
+    fig.tight_layout()
+    return fig
+
+
 def make_cdf_figure(*, real: np.ndarray, generated: np.ndarray) -> Figure:
     _apply_style()
     fig = Figure(figsize=(5.9, 4.4), dpi=150)

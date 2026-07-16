@@ -30,6 +30,16 @@ class VersionArtifacts:
             out[k] = (float(v[0]), float(v[1]))
         return out
 
+    @property
+    def is_scenario_run(self) -> bool:
+        """True when this version was trained with train_cgan_scenarios."""
+        return self.train_details.get("run_type") == "train_cgan_scenarios"
+
+    @property
+    def scenario_source(self) -> dict[str, Any]:
+        """Scenario-specific training metadata from train_details.json."""
+        return self.train_details.get("scenario_source", {})
+
 
 def _load_json(path: Path) -> dict[str, Any]:
     if not path.exists():
@@ -141,9 +151,54 @@ def load_version_artifacts(version: str) -> VersionArtifacts:
     )
 
 
+def load_scenario_version_artifacts(version: str) -> VersionArtifacts:
+    """Load artifacts for a scenario-trained model from the cgan_scenarios log dir."""
+    from .config import SCENARIO_LOGS_ROOT
+    version_dir = SCENARIO_LOGS_ROOT / version
+    test_results = version_dir / "test_results"
+
+    hparams = _load_hparams_yaml(version_dir / "hparams.yaml")
+    train_details = _load_json(version_dir / "train_details.json")
+    eval_metadata = _load_json(test_results / "eval_metadata.json")
+    conditional_metrics = _load_json(test_results / "conditional_metrics.json")
+    checkpoint = _pick_checkpoint(version_dir)
+
+    has_eval = bool(eval_metadata) and bool(conditional_metrics)
+    status = "complete" if has_eval and checkpoint else "partial"
+
+    return VersionArtifacts(
+        version=f"scenarios/{version}",
+        version_dir=version_dir,
+        checkpoint=checkpoint,
+        hparams=hparams,
+        train_details=train_details,
+        eval_metadata=eval_metadata,
+        conditional_metrics=conditional_metrics,
+        status=status,
+    )
+
+
 def load_registry(curated: list[str] | None = None) -> dict[str, VersionArtifacts]:
     versions = discover_versions(curated)
     return {v: load_version_artifacts(v) for v in versions}
+
+
+def load_combined_registry() -> dict[str, VersionArtifacts]:
+    """Load model versions from both cgan (MFTR) and cgan_scenarios log dirs.
+
+    Scenario versions are prefixed with 'scenarios/' so they are distinguishable
+    in the UI dropdown while sharing the same registry dict.
+    """
+    from .config import SCENARIO_LOGS_ROOT, SCENARIO_CURATED_VERSIONS
+
+    registry: dict[str, VersionArtifacts] = {}
+    for v in discover_versions():
+        registry[v] = load_version_artifacts(v)
+    for v in SCENARIO_CURATED_VERSIONS:
+        if (SCENARIO_LOGS_ROOT / v).exists():
+            art = load_scenario_version_artifacts(v)
+            registry[art.version] = art
+    return registry
 
 
 def _fmt_range(name: str, r: tuple[float, float]) -> str:
@@ -154,6 +209,9 @@ def _fmt_range(name: str, r: tuple[float, float]) -> str:
 
 
 def model_card_markdown(art: VersionArtifacts) -> str:
+    if art.is_scenario_run:
+        return _scenario_model_card_markdown(art)
+
     hp = dict(art.hparams)
     td = art.train_details
     hp_td = td.get("training_hyperparameters", {})
@@ -197,6 +255,41 @@ def model_card_markdown(art: VersionArtifacts) -> str:
         _fmt_range("K", r["K"]),
         _fmt_range("delta", r["delta"]),
         _fmt_range("omega", r["omega"]),
+        "#### Runtime",
+        f"- **Python / Torch / Lightning**: {platform.get('python_version', 'N/A')} / {platform.get('torch_version', 'N/A')} / {platform.get('lightning_version', 'N/A')}",
+    ]
+    return "\n".join(rows)
+
+
+def _scenario_model_card_markdown(art: VersionArtifacts) -> str:
+    """Model card for scenario-trained models (train_cgan_scenarios runs)."""
+    td = art.train_details
+    src = art.scenario_source
+    hp = td.get("training_hyperparameters", {})
+    ds_train = td.get("datasets", {}).get("train", {})
+    dl = td.get("dataloaders", {})
+    platform = td.get("platform", {})
+    ckpt = str(art.checkpoint.name) if art.checkpoint else "Not found"
+    status = "Complete" if art.status == "complete" else "Partial"
+
+    train_ids = src.get("train_scenario_ids", [])
+    rows = [
+        f"### Model {art.version} — Scenario ({status})",
+        f"- **Checkpoint file**: {ckpt}",
+        f"- **Saved at (UTC)**: {td.get('saved_at_utc', 'N/A')}",
+        "#### Scenario training conditions",
+        f"- **Training scenarios**: {', '.join(str(s) for s in train_ids)}",
+        f"- **Sample source**: {src.get('source', 'N/A')}",
+        f"- **Params method**: {src.get('params_method', 'N/A')}",
+        f"- **Samples per scenario**: {src.get('samples_per_scenario', 'N/A')}",
+        f"- **Total training samples**: {ds_train.get('num_samples_total', 'N/A')}",
+        f"- **Cond. normalization**: {ds_train.get('normalize_conds', 'N/A')}",
+        "#### Architecture",
+        f"- **Latent dim / Cond dim / Cond emb dim**: {hp.get('latent_dim', 'N/A')} / {hp.get('cond_dim', 'N/A')} / {hp.get('cond_emb_dim', 'N/A')}",
+        "#### Training setup",
+        f"- **Epochs / Batch size**: {hp.get('epochs', 'N/A')} / {dl.get('batch_size', hp.get('batch_size', 'N/A'))}",
+        f"- **Generator LR / Discriminator LR**: {hp.get('lr_g', 'N/A')} / {hp.get('lr_d', 'N/A')}",
+        f"- **G update every k steps**: {hp.get('g_every_k_steps', 'N/A')}",
         "#### Runtime",
         f"- **Python / Torch / Lightning**: {platform.get('python_version', 'N/A')} / {platform.get('torch_version', 'N/A')} / {platform.get('lightning_version', 'N/A')}",
     ]

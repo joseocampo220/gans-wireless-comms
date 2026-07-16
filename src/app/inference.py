@@ -14,7 +14,7 @@ from local_distributions import mftr
 from local_datasets.mftr_uniform_conditional_dataset import normalize_conds_minus1_1
 
 from .artifacts import VersionArtifacts
-from .config import DEFAULT_BATCH_SIZE
+from .config import DEFAULT_BATCH_SIZE, SCENARIOS_DATA_ROOT
 
 
 def _validate_params(m: float, mu: float, K: float, delta: float, omega: float) -> str | None:
@@ -167,6 +167,71 @@ def run_comparison(
         random_state=int(seed),
     )
     real = np.asarray(real, dtype=float).reshape(-1)
+
+    metrics = _metrics_two_sample(real, generated)
+    return real, generated, metrics, None
+
+
+def run_scenario_comparison(
+    *,
+    art: VersionArtifacts,
+    m: float,
+    mu: float,
+    K: float,
+    delta: float,
+    omega: float,
+    scenario_id: int,
+    n_samples: int,
+    seed: int,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+) -> tuple[np.ndarray, np.ndarray, dict[str, float], str | None]:
+    """Compare scenario empirical samples against model-generated samples.
+
+    Unlike `run_comparison`, the 'real' samples come from the scenario's
+    `samples.csv` file rather than from the MFTR theoretical distribution.
+    Parameter validation against strict MFTR domain constraints is intentionally
+    skipped here, because scenario-estimated params may lie outside those bounds
+    (e.g. mu < 1, delta == 1).
+    """
+    if art.checkpoint is None:
+        return np.array([]), np.array([]), {}, "No checkpoint found for selected model version"
+
+    model = load_model_cached(str(art.checkpoint))
+
+    # Determine normalization: check datasets.train first, then eval_metadata fallback.
+    normalize_conds = bool(
+        art.train_details.get("datasets", {}).get("train", {}).get(
+            "normalize_conds",
+            art.eval_metadata.get("normalize_conds", False),
+        )
+    )
+
+    cond_raw = torch.tensor([[m, mu, K, delta, omega]], dtype=torch.float32)
+    if normalize_conds:
+        ranges = art.ranges
+        conds = normalize_conds_minus1_1(
+            cond_raw,
+            (ranges["m"], ranges["mu"], ranges["K"], ranges["delta"], ranges["omega"]),
+        )
+    else:
+        conds = cond_raw
+
+    conds_rep = conds.repeat(int(n_samples), 1)
+    device = next(model.parameters()).device
+    gen = torch.Generator(device=device).manual_seed(int(seed))
+
+    outputs = []
+    with torch.inference_mode():
+        for start in range(0, int(n_samples), int(batch_size)):
+            c = conds_rep[start : start + int(batch_size)].to(device)
+            z = torch.randn(c.shape[0], int(model.latent_dim), device=device, generator=gen)
+            x = model(z, c)
+            outputs.append(x.detach().cpu())
+    generated = torch.cat(outputs, dim=0).reshape(-1).numpy().astype(float)
+
+    from local_datasets.scenario_data import load_scenario_data
+    scenario = load_scenario_data(scenario_id, SCENARIOS_DATA_ROOT)
+    real = scenario.load_samples().astype(float)
 
     metrics = _metrics_two_sample(real, generated)
     return real, generated, metrics, None

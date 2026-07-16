@@ -13,6 +13,8 @@ def find_repo_root(start: Path) -> Path:
 
 REPO_ROOT = find_repo_root(Path(__file__))
 LOGS_ROOT = REPO_ROOT / "logs" / "mftr" / "cgan"
+SCENARIO_LOGS_ROOT = REPO_ROOT / "logs" / "mftr" / "cgan_scenarios"
+SCENARIOS_DATA_ROOT = REPO_ROOT / "data" / "scenarios"
 
 def _version_sort_key(name: str) -> tuple[int, str]:
     try:
@@ -35,14 +37,17 @@ def discover_versions(logs_root: Path) -> list[str]:
 
 # Auto-discovered from LOGS_ROOT.
 CURATED_VERSIONS = discover_versions(LOGS_ROOT)
+SCENARIO_CURATED_VERSIONS = discover_versions(SCENARIO_LOGS_ROOT)
 
-# Fixed slider bounds used in the UI.
+# Slider bounds. Wide enough to cover all scenario params (m up to ~500,
+# mu up to ~62) while still supporting narrow interpolation experiments.
+# Steps are deliberately fine so small adjustments remain precise.
 UI_PARAM_BOUNDS = {
-    "m": (1.0, 10.0),
-    "mu": (1.0, 15.0),
-    "K": (0.0, 20.0),
+    "m": (1.0, 600.0),
+    "mu": (0.1, 80.0),
+    "K": (0.0, 100.0),
     "delta": (0.0, 0.999),
-    "omega": (1.0, 2.0),
+    "omega": (0.5, 2.0),
 }
 
 DEFAULT_TEST_PARAMS = {

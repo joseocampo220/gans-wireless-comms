@@ -61,6 +61,24 @@ train-cgan-mftr:
 	--lr_d 0.0004 \
 	--betas_g 0.5 0.999
 
+train-cgan-scenarios:
+	cd scripts && \
+	uv run python train_cgan_scenarios.py \
+	--train_scenarios 1 2 3 4 5 \
+	--source empirical_pdf \
+	--samples_per_scenario 10000 \
+	--epochs 150 \
+	--batch_size 256 \
+	--latent_dim 1024 \
+	--cond_emb_dim 32 \
+	--g_every_k_steps 3 \
+	--num_workers 12 \
+	--lr_g 0.0002 \
+	--lr_d 0.0004 \
+	--betas_g 0.5 0.999 \
+	--devices 1 \
+	--seed 42
+
 test-gan:
 	cd scripts && \
 	uv run python test.py \

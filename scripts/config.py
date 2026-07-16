@@ -248,3 +248,130 @@ def get_cgan_args():
     parser.add_argument("--seed", type=int, default=42)
 
     return parser.parse_args()
+
+
+def _parse_devices(value: str):
+    """Parse --devices as an int, comma-separated list of ints, or 'auto'."""
+    if value == "auto":
+        return "auto"
+    if "," in value:
+        return [int(x) for x in value.split(",")]
+    return int(value)
+
+
+def get_scenario_cgan_args():
+    """CLI arguments for scenario-conditioned CGAN training.
+
+    Scenario training uses empirical scenario data instead of a wide synthetic
+    parameter grid. It shares all model/trainer hyperparameters with
+    `get_cgan_args`, but replaces dataset construction arguments with:
+
+    - `--scenarios_root`: path to the directory containing `scenario_<n>/` folders.
+    - `--train_scenarios`: space-separated list of scenario ids to train on.
+    - `--samples_per_scenario`: samples per scenario (default: 10000).
+    - `--source`: `empirical_pdf` or `mftr_generated`.
+    - `--params_method`: which estimation method to read params from.
+    """
+    parser = argparse.ArgumentParser(
+        description="Train a CGAN on scenario-conditioned data"
+    )
+
+    # ---- Paths ----
+    parser.add_argument(
+        "--logs_dir",
+        type=str,
+        default="../logs",
+        help="Directory to save logs and model checkpoints",
+    )
+    parser.add_argument(
+        "--scenarios_root",
+        type=str,
+        default="../data/scenarios",
+        help="Root directory containing scenario_<n> folders",
+    )
+
+    # ---- Scenario selection ----
+    parser.add_argument(
+        "--train_scenarios",
+        type=int,
+        nargs="+",
+        required=True,
+        help="Space-separated list of scenario ids to use for training, e.g. --train_scenarios 1 2 3 4 5",
+    )
+
+    # ---- Dataset ----
+    parser.add_argument(
+        "--samples_per_scenario",
+        type=int,
+        default=10000,
+        help="Number of samples to draw per scenario",
+    )
+    parser.add_argument(
+        "--source",
+        type=str,
+        default="empirical_pdf",
+        choices=["empirical_pdf", "mftr_generated"],
+        help="Sample source: empirical_pdf (default) or mftr_generated",
+    )
+    parser.add_argument(
+        "--params_method",
+        type=str,
+        default="fminsearch",
+        choices=["fminsearch", "ga"],
+        help="Estimated-parameter method to use from estimated_params.csv",
+    )
+    parser.add_argument(
+        "--dist_type",
+        type=str,
+        default="amplitude",
+        choices=["amplitude", "power"],
+        help="Whether MFTR samples are amplitudes or powers (used for mftr_generated source)",
+    )
+
+    # ---- Model ----
+    parser.add_argument("--latent_dim", "-d", type=int, default=1000)
+    parser.add_argument("--cond_dim", type=int, default=5)
+    parser.add_argument("--cond_emb_dim", type=int, default=16)
+    parser.add_argument(
+        "--g_every_k_steps",
+        "-k",
+        type=int,
+        default=3,
+        help="Number of discriminator steps per generator step",
+    )
+
+    # ---- Training ----
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--lr_g", type=float, default=0.0001)
+    parser.add_argument("--lr_d", type=float, default=0.0002)
+    parser.add_argument("--betas_g", type=float, nargs=2, default=(0.5, 0.999))
+    parser.add_argument("--betas_d", type=float, nargs=2, default=(0.5, 0.999))
+    parser.add_argument(
+        "--normalize_conds",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "If true, normalize MFTR condition parameters to [-1, 1]. "
+            "Scenario params can span very wide ranges, so this defaults to False."
+        ),
+    )
+    parser.add_argument(
+        "--val_metric_max_samples",
+        type=int,
+        default=20000,
+        help="Max samples used to compute val_wasserstein",
+    )
+    parser.add_argument(
+        "--devices",
+        type=str,
+        default="1",
+        help=(
+            "Devices to train on. Accepts an int (e.g. '1'), a comma-separated "
+            "list of GPU ids (e.g. '0,1'), or 'auto'. Default: '1'."
+        ),
+    )
+    parser.add_argument("--seed", type=int, default=42)
+
+    return parser.parse_args()

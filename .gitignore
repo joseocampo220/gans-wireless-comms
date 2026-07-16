@@ -213,7 +213,9 @@ logs/*
 # Local folders
 results/*
 notebooks/*
+data/*
 !*.gitkeep
+docs/*
 
 # Latex files
 *.acn

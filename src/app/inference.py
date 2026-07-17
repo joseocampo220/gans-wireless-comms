@@ -208,11 +208,19 @@ def run_scenario_comparison(
 
     cond_raw = torch.tensor([[m, mu, K, delta, omega]], dtype=torch.float32)
     if normalize_conds:
-        ranges = art.ranges
-        conds = normalize_conds_minus1_1(
-            cond_raw,
-            (ranges["m"], ranges["mu"], ranges["K"], ranges["delta"], ranges["omega"]),
-        )
+        # For scenario models the normalization ranges are the per-scenario
+        # param min/max values computed at training time and stored in
+        # scenario_source.cond_ranges. Using art.ranges here would return
+        # zeros (no distribution.parameter_ranges for scenario runs).
+        raw_ranges = art.scenario_source.get("cond_ranges", {})
+        if raw_ranges:
+            ranges = tuple(
+                tuple(raw_ranges[name])
+                for name in ["m", "mu", "K", "delta", "omega"]
+            )
+        else:
+            ranges = tuple(art.ranges[name] for name in ["m", "mu", "K", "delta", "omega"])
+        conds = normalize_conds_minus1_1(cond_raw, ranges)
     else:
         conds = cond_raw
 

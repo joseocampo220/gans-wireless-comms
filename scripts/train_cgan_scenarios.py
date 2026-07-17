@@ -106,6 +106,12 @@ def _save_training_details(
             "params_method": args.params_method,
             "samples_per_scenario": int(args.samples_per_scenario),
             "scenarios_root": str(Path(args.scenarios_root).resolve()),
+            # Per-parameter normalization ranges derived from the training scenario
+            # conditions. Required to reproduce the same normalization at inference.
+            "cond_ranges": {
+                name: list(train_dataset.cond_ranges[i])
+                for i, name in enumerate(["m", "mu", "K", "delta", "omega"])
+            },
         },
         "datasets": {
             "train": {
@@ -191,6 +197,7 @@ def main():
         source=args.source,
         method=args.params_method,
         dist_type=args.dist_type,
+        normalize_conds=args.normalize_conds,
         seed=args.seed,
     )
 
@@ -204,6 +211,7 @@ def main():
         source=args.source,
         method=args.params_method,
         dist_type=args.dist_type,
+        normalize_conds=args.normalize_conds,
         seed=args.seed + 1,
     )
 

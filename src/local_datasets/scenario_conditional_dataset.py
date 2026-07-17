@@ -29,6 +29,7 @@ import torch
 from torch.utils.data import Dataset
 
 from local_distributions import mftr
+from local_datasets.mftr_uniform_conditional_dataset import normalize_conds_minus1_1
 from local_datasets.scenario_data import load_scenario_data
 
 
@@ -87,6 +88,8 @@ class ScenarioConditionalDataset(Dataset):
     - `source`: `empirical_pdf` or `mftr_generated`.
     - `method`: Estimated-params method from `estimated_params.csv`.
     - `dist_type`: Distribution output for MFTR generation (`amplitude` or `power`).
+    - `normalize_conds`: If True, normalize condition parameters to [-1, 1] using
+      the min/max range of each parameter across the loaded scenarios.
     - `seed`: Optional seed used for reproducible sampling.
     """
 
@@ -99,6 +102,7 @@ class ScenarioConditionalDataset(Dataset):
         source: str = "empirical_pdf",
         method: str = "fminsearch",
         dist_type: str = "amplitude",
+        normalize_conds: bool = False,
         seed: Optional[int] = None,
     ):
         if not scenario_ids:
@@ -118,7 +122,7 @@ class ScenarioConditionalDataset(Dataset):
         if dist_type not in ("amplitude", "power"):
             raise ValueError("dist_type must be 'amplitude' or 'power'")
         self.dist_type = dist_type
-
+        self.normalize_conds = bool(normalize_conds)
         self.method = method
         self.seed = seed
 
@@ -169,9 +173,21 @@ class ScenarioConditionalDataset(Dataset):
 
         self.samples = torch.cat(samples_all, dim=0)
 
+        # Always compute per-param (min, max) ranges from the loaded scenario
+        # conditions. These are stored so training scripts can persist them in
+        # train_details.json for exact reproduction at inference time.
+        self.cond_ranges: tuple[tuple[float, float], ...] = tuple(
+            (float(self.conds_raw[:, i].min()), float(self.conds_raw[:, i].max()))
+            for i in range(5)
+        )
+        if self.normalize_conds:
+            self.conds = normalize_conds_minus1_1(self.conds_raw, self.cond_ranges)
+        else:
+            self.conds = self.conds_raw
+
     def __len__(self) -> int:
         return self.samples.shape[0]
 
     def __getitem__(self, idx: int):
         scenario_idx = idx // self.samples_per_scenario
-        return self.samples[idx], self.conds_raw[scenario_idx]
+        return self.samples[idx], self.conds[scenario_idx]

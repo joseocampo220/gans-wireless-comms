@@ -95,6 +95,19 @@ def _on_model_or_extrapolation_change(
 SCENARIO_CHOICES = ["None"] + [f"Scenario {i}" for i in range(1, 7)]
 
 
+def _reload_registry(registry: dict) -> gr.update:
+    """Reload both cgan and cgan_scenarios log dirs and refresh the version dropdown.
+
+    The registry dict is mutated in-place so all existing callbacks that close
+    over it automatically see the updated model list without restarting the app.
+    """
+    new = load_combined_registry()
+    registry.clear()
+    registry.update(new)
+    versions = list(registry.keys())
+    return gr.update(choices=versions, value=versions[0] if versions else None)
+
+
 def _make_on_scenario_change(scenario_params: dict[int, dict[str, float]]):
     """Return a callback that autofills sliders from the selected scenario's params."""
 
@@ -245,11 +258,14 @@ def build_app() -> gr.Blocks:
             with gr.Tab("Model in Action"):
                 with gr.Row(elem_classes=["wrap"]):
                     with gr.Column(scale=4):
-                        version_dd = gr.Dropdown(
-                            choices=versions,
-                            value=default_version,
-                            label="Model version",
-                        )
+                        with gr.Row():
+                            version_dd = gr.Dropdown(
+                                choices=versions,
+                                value=default_version,
+                                label="Model version",
+                                scale=5,
+                            )
+                            reload_btn = gr.Button("↺ Reload", scale=1, min_width=80)
                         model_card = gr.Markdown(model_card_markdown(default_art))
 
                         scenario_dd = gr.Dropdown(
@@ -297,6 +313,12 @@ def build_app() -> gr.Blocks:
                     fn=lambda v: _on_model_or_extrapolation_change(v, registry),
                     inputs=[version_dd],
                     outputs=on_change_outputs,
+                )
+
+                reload_btn.click(
+                    fn=lambda: _reload_registry(registry),
+                    inputs=[],
+                    outputs=[version_dd],
                 )
 
                 scenario_dd.change(

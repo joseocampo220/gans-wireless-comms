@@ -36,6 +36,7 @@ from pathlib import Path
 import lightning as L
 import numpy as np
 import torch
+from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import TensorBoardLogger
 from torch.utils.data import ConcatDataset, DataLoader
 
@@ -484,6 +485,15 @@ def main():
         deterministic=True,
         benchmark=False,
         log_every_n_steps=50,
+        callbacks=[
+            ModelCheckpoint(
+                monitor="val_wasserstein",
+                mode="min",
+                filename="best",
+                save_top_k=1,
+                save_last=True,
+            ),
+        ],
     )
 
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)

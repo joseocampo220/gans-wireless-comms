@@ -84,6 +84,33 @@ train-cgan-scenarios:
 	--normalize_conds \
 	--seed 42
 
+train-cgan-scenarios-mixed:
+	cd scripts && \
+	$(if $(CUDA_DEVICE),CUDA_VISIBLE_DEVICES=$(CUDA_DEVICE) )uv run python train_cgan_scenarios.py \
+	--train_scenarios 1 2 3 4 5 \
+	--source empirical_pdf \
+	--samples_per_scenario 10000 \
+	--mix_mftr \
+	--mix_mftr_combos 1024 \
+	--mix_mftr_samples_per_combo 1000 \
+	--m_range "[1, 1000]" \
+	--mu_range "[1, 10]" \
+	--K_range "[0, 100]" \
+	--delta_range "[0, 0.99]" \
+	--omega_range "[1, 1]" \
+	--epochs 1 \
+	--batch_size 256 \
+	--latent_dim 1024 \
+	--cond_emb_dim 32 \
+	--g_every_k_steps 3 \
+	--num_workers 12 \
+	--lr_g 0.0002 \
+	--lr_d 0.0004 \
+	--betas_g 0.5 0.999 \
+	--devices 1 \
+	--normalize_conds \
+	--seed 42
+
 test-gan:
 	cd scripts && \
 	uv run python test.py \

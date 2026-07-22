@@ -1,4 +1,17 @@
 import argparse
+import json
+
+
+def _parse_range(value: str, name: str) -> tuple[float, float]:
+    """Parse a JSON array string like ``[low, high]`` into a float pair."""
+    parsed = json.loads(value)
+    if (
+        not isinstance(parsed, list)
+        or len(parsed) != 2
+        or not all(isinstance(x, (int, float)) for x in parsed)
+    ):
+        raise ValueError(f"{name} must be a JSON array like [low, high]. Got: {value}")
+    return float(parsed[0]), float(parsed[1])
 
 
 def get_args():
@@ -326,6 +339,65 @@ def get_scenario_cgan_args():
         default="amplitude",
         choices=["amplitude", "power"],
         help="Whether MFTR samples are amplitudes or powers (used for mftr_generated source)",
+    )
+
+    # ---- Mixed training (scenario + MFTR uniform) ----
+    parser.add_argument(
+        "--mix_mftr",
+        action="store_true",
+        default=False,
+        help=(
+            "If set, augment the scenario dataset with MFTR samples drawn from "
+            "the uniform parameter ranges below. Default: False."
+        ),
+    )
+    parser.add_argument(
+        "--mix_mftr_combos",
+        type=int,
+        default=64,
+        help=(
+            "Number of MFTR parameter combos when mixing. "
+            "Only relevant when --mix_mftr is set. Default: 64."
+        ),
+    )
+    parser.add_argument(
+        "--mix_mftr_samples_per_combo",
+        type=int,
+        default=None,
+        help=(
+            "Samples per MFTR uniform combo when mixing. "
+            "Defaults to the value of --samples_per_scenario."
+        ),
+    )
+    parser.add_argument(
+        "--m_range",
+        type=str,
+        default="[1.0, 8.0]",
+        help="JSON array [low, high] for 'm'",
+    )
+    parser.add_argument(
+        "--mu_range",
+        type=str,
+        default="[1.0, 9.0]",
+        help="JSON array [low, high] for 'mu'",
+    )
+    parser.add_argument(
+        "--K_range",
+        type=str,
+        default="[0.0, 20.0]",
+        help="JSON array [low, high] for 'K'",
+    )
+    parser.add_argument(
+        "--delta_range",
+        type=str,
+        default="[0.0, 0.9]",
+        help="JSON array [low, high] for 'delta'",
+    )
+    parser.add_argument(
+        "--omega_range",
+        type=str,
+        default="[1.0, 2.0]",
+        help="JSON array [low, high] for 'omega'",
     )
 
     # ---- Model ----

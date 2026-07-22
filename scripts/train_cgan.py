@@ -15,19 +15,8 @@ import numpy as np
 
 from cgans import CGAN
 from local_datasets import MftrUniformConditionalDataset
-from config import get_cgan_args
+from config import get_cgan_args, _parse_range
 from cgans.mftr_evaluation import MftrRanges, run_end_of_training_evaluation
-
-
-def _parse_range(value: str, name: str) -> tuple[float, float]:
-    parsed = json.loads(value)
-    if (
-        not isinstance(parsed, list)
-        or len(parsed) != 2
-        or not all(isinstance(x, (int, float)) for x in parsed)
-    ):
-        raise ValueError(f"{name} must be a JSON array like [low, high]. Got: {value}")
-    return float(parsed[0]), float(parsed[1])
 
 
 def _sample_conds(

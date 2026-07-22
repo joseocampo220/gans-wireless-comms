@@ -88,8 +88,11 @@ class ScenarioConditionalDataset(Dataset):
     - `source`: `empirical_pdf` or `mftr_generated`.
     - `method`: Estimated-params method from `estimated_params.csv`.
     - `dist_type`: Distribution output for MFTR generation (`amplitude` or `power`).
-    - `normalize_conds`: If True, normalize condition parameters to [-1, 1] using
-      the min/max range of each parameter across the loaded scenarios.
+    - `normalize_conds`: If True, normalize condition parameters to [-1, 1].
+    - `cond_ranges`: Optional explicit ranges for normalization, provided as
+      a 5-tuple of (min, max) tuples in `(m, mu, K, delta, omega)` order.
+      When given, these are used instead of computing ranges from scenario data.
+      Ignored when `normalize_conds` is False.
     - `seed`: Optional seed used for reproducible sampling.
     """
 
@@ -103,6 +106,15 @@ class ScenarioConditionalDataset(Dataset):
         method: str = "fminsearch",
         dist_type: str = "amplitude",
         normalize_conds: bool = False,
+        cond_ranges: Optional[
+            tuple[
+                tuple[float, float],
+                tuple[float, float],
+                tuple[float, float],
+                tuple[float, float],
+                tuple[float, float],
+            ]
+        ] = None,
         seed: Optional[int] = None,
     ):
         if not scenario_ids:
@@ -173,13 +185,19 @@ class ScenarioConditionalDataset(Dataset):
 
         self.samples = torch.cat(samples_all, dim=0)
 
-        # Always compute per-param (min, max) ranges from the loaded scenario
-        # conditions. These are stored so training scripts can persist them in
-        # train_details.json for exact reproduction at inference time.
-        self.cond_ranges: tuple[tuple[float, float], ...] = tuple(
-            (float(self.conds_raw[:, i].min()), float(self.conds_raw[:, i].max()))
-            for i in range(5)
-        )
+        # Condition ranges used for normalization. When `cond_ranges` is
+        # provided explicitly (e.g. from a mixed training setup), use it
+        # directly; otherwise compute per-param (min, max) from scenario data.
+        if cond_ranges is not None:
+            self.cond_ranges = cond_ranges
+        else:
+            self.cond_ranges = tuple(
+                (
+                    float(self.conds_raw[:, i].min()),
+                    float(self.conds_raw[:, i].max()),
+                )
+                for i in range(5)
+            )
         if self.normalize_conds:
             self.conds = normalize_conds_minus1_1(self.conds_raw, self.cond_ranges)
         else:

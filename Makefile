@@ -1,3 +1,7 @@
+# Set to a specific GPU index (e.g. "1") to restrict to that GPU,
+# or leave empty to use all available GPUs.
+CUDA_DEVICE ?=
+
 .PHONY: test lint format build run
 
 train-rayleigh:
@@ -63,7 +67,7 @@ train-cgan-mftr:
 
 train-cgan-scenarios:
 	cd scripts && \
-	uv run python train_cgan_scenarios.py \
+	$(if $(CUDA_DEVICE),CUDA_VISIBLE_DEVICES=$(CUDA_DEVICE) )uv run python train_cgan_scenarios.py \
 	--train_scenarios 1 2 3 4 5 \
 	--source empirical_pdf \
 	--samples_per_scenario 10000 \
@@ -71,12 +75,13 @@ train-cgan-scenarios:
 	--batch_size 256 \
 	--latent_dim 1024 \
 	--cond_emb_dim 32 \
-	--g_every_k_steps 3 \
+	--g_every_k_steps 5 \
 	--num_workers 12 \
 	--lr_g 0.0002 \
 	--lr_d 0.0004 \
 	--betas_g 0.5 0.999 \
 	--devices 1 \
+	--normalize_conds \
 	--seed 42
 
 test-gan:
@@ -107,7 +112,7 @@ run-hooks:
 	uv run pre-commit run --all-files
 
 tensorboard:
-	tensorboard --logdir logs/mftr/cgan
+	tensorboard --logdir logs/
 
 clean:
 	rm -rf logs/* || true && rm -rf results/tests/* || true

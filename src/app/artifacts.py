@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 import json
 
-from .config import CURATED_VERSIONS, LOGS_ROOT
+from .config import CURATED_VERSIONS, LOGS_ROOT, _version_sort_key
 
 
 @dataclass(frozen=True)
@@ -102,14 +102,31 @@ def _load_hparams_yaml(path: Path) -> dict[str, Any]:
     return out
 
 
+def _list_checkpoint_names(version_dir: Path) -> list[str]:
+    """Return sorted checkpoint stems available in a version directory.
+
+    Preferred names ("best", "last") come first, then any epoch-named files.
+    """
+    ckpt_dir = version_dir / "checkpoints"
+    if not ckpt_dir.exists():
+        return []
+    names = sorted({p.stem for p in ckpt_dir.glob("*.ckpt")})
+    preferred = ["best", "last"]
+    ordered = [n for n in preferred if n in names]
+    ordered += [n for n in names if n not in preferred]
+    return ordered
+
+
 def _pick_checkpoint(version_dir: Path) -> Path | None:
     ckpt_dir = version_dir / "checkpoints"
     if not ckpt_dir.exists():
         return None
 
-    best = ckpt_dir / "best_model.ckpt"
-    if best.exists():
-        return best
+    # Prefer best_model.ckpt, then best.ckpt, then the last epoch file.
+    for preferred in ("best_model", "best"):
+        candidate = ckpt_dir / f"{preferred}.ckpt"
+        if candidate.exists():
+            return candidate
 
     ckpts = sorted(ckpt_dir.glob("*.ckpt"))
     if not ckpts:
@@ -126,56 +143,95 @@ def discover_versions(curated: list[str] | None = None) -> list[str]:
     return out
 
 
-def load_version_artifacts(version: str) -> VersionArtifacts:
-    version_dir = LOGS_ROOT / version
+def _fresh_scan_versions(logs_root: Path) -> list[str]:
+    """Live directory scan — does not rely on module-level caches."""
+    if not logs_root.exists():
+        return []
+    return sorted(
+        (
+            p.name
+            for p in logs_root.iterdir()
+            if p.is_dir() and p.name.startswith("version_")
+        ),
+        key=_version_sort_key,
+    )
+
+
+def _load_single_artifacts(
+    version_dir: Path,
+    version_key: str,
+    checkpoint_name: str | None = None,
+) -> VersionArtifacts:
+    """Build a VersionArtifacts for a single version directory and checkpoint.
+
+    Parameters
+    ----------
+    version_dir
+        Absolute path to the version directory.
+    version_key
+        Display key in the registry (e.g. ``\"version_0\"`` or ``\"scenarios/version_0\"``).
+    checkpoint_name
+        Checkpoint stem (``\"best\"``, ``\"last\"``, etc.). When ``None``, picks the
+        best or last checkpoint automatically (backward compat).
+    """
     test_results = version_dir / "test_results"
 
     hparams = _load_hparams_yaml(version_dir / "hparams.yaml")
     train_details = _load_json(version_dir / "train_details.json")
     eval_metadata = _load_json(test_results / "eval_metadata.json")
     conditional_metrics = _load_json(test_results / "conditional_metrics.json")
-    checkpoint = _pick_checkpoint(version_dir)
+
+    if checkpoint_name is not None:
+        ckpt = version_dir / "checkpoints" / f"{checkpoint_name}.ckpt"
+        if not ckpt.exists():
+            ckpt = None
+    else:
+        ckpt = _pick_checkpoint(version_dir)
 
     has_eval = bool(eval_metadata) and bool(conditional_metrics)
-    status = "complete" if has_eval and checkpoint else "partial"
+    status = "complete" if has_eval and ckpt else "partial"
 
     return VersionArtifacts(
-        version=version,
+        version=version_key,
         version_dir=version_dir,
-        checkpoint=checkpoint,
+        checkpoint=ckpt,
         hparams=hparams,
         train_details=train_details,
         eval_metadata=eval_metadata,
         conditional_metrics=conditional_metrics,
         status=status,
     )
+
+
+def _expand_checkpoints(
+    version_dir: Path,
+    base_key: str,
+) -> dict[str, VersionArtifacts]:
+    """Create one registry entry per available checkpoint in a version directory.
+
+    Returns a dict mapping display keys like ``\"version_0/best\"`` to their
+    ``VersionArtifacts``.
+    """
+    names = _list_checkpoint_names(version_dir)
+    if not names:
+        return {}
+    result: dict[str, VersionArtifacts] = {}
+    for name in names:
+        key = f"{base_key}/{name}"
+        result[key] = _load_single_artifacts(version_dir, key, checkpoint_name=name)
+    return result
+
+
+def load_version_artifacts(version: str) -> VersionArtifacts:
+    version_dir = LOGS_ROOT / version
+    return _load_single_artifacts(version_dir, version)
 
 
 def load_scenario_version_artifacts(version: str) -> VersionArtifacts:
     """Load artifacts for a scenario-trained model from the cgan_scenarios log dir."""
     from .config import SCENARIO_LOGS_ROOT
     version_dir = SCENARIO_LOGS_ROOT / version
-    test_results = version_dir / "test_results"
-
-    hparams = _load_hparams_yaml(version_dir / "hparams.yaml")
-    train_details = _load_json(version_dir / "train_details.json")
-    eval_metadata = _load_json(test_results / "eval_metadata.json")
-    conditional_metrics = _load_json(test_results / "conditional_metrics.json")
-    checkpoint = _pick_checkpoint(version_dir)
-
-    has_eval = bool(eval_metadata) and bool(conditional_metrics)
-    status = "complete" if has_eval and checkpoint else "partial"
-
-    return VersionArtifacts(
-        version=f"scenarios/{version}",
-        version_dir=version_dir,
-        checkpoint=checkpoint,
-        hparams=hparams,
-        train_details=train_details,
-        eval_metadata=eval_metadata,
-        conditional_metrics=conditional_metrics,
-        status=status,
-    )
+    return _load_single_artifacts(version_dir, f"scenarios/{version}")
 
 
 def load_registry(curated: list[str] | None = None) -> dict[str, VersionArtifacts]:
@@ -186,18 +242,21 @@ def load_registry(curated: list[str] | None = None) -> dict[str, VersionArtifact
 def load_combined_registry() -> dict[str, VersionArtifacts]:
     """Load model versions from both cgan (MFTR) and cgan_scenarios log dirs.
 
-    Scenario versions are prefixed with 'scenarios/' so they are distinguishable
-    in the UI dropdown while sharing the same registry dict.
+    Each version is expanded into its available checkpoints (``best``, ``last``,
+    etc.) so the UI lets the user pick which checkpoint to use.
+
+    Uses fresh directory scans — does **not** rely on module-level caches, so
+    calling this again picks up newly trained models without restarting the app.
     """
-    from .config import SCENARIO_LOGS_ROOT, SCENARIO_CURATED_VERSIONS
+    from .config import SCENARIO_LOGS_ROOT
 
     registry: dict[str, VersionArtifacts] = {}
-    for v in discover_versions():
-        registry[v] = load_version_artifacts(v)
-    for v in SCENARIO_CURATED_VERSIONS:
-        if (SCENARIO_LOGS_ROOT / v).exists():
-            art = load_scenario_version_artifacts(v)
-            registry[art.version] = art
+    for v in _fresh_scan_versions(LOGS_ROOT):
+        registry.update(_expand_checkpoints(LOGS_ROOT / v, v))
+    for v in _fresh_scan_versions(SCENARIO_LOGS_ROOT):
+        registry.update(
+            _expand_checkpoints(SCENARIO_LOGS_ROOT / v, f"scenarios/{v}")
+        )
     return registry
 
 

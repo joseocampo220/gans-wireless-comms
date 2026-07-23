@@ -8,7 +8,6 @@ from gradio.themes import Soft
 
 from app.artifacts import VersionArtifacts, load_combined_registry, model_card_markdown
 from app.config import (
-    CURATED_VERSIONS,
     DEFAULT_TEST_PARAMS,
     DEFAULT_NUM_SAMPLES,
     DEFAULT_SEED,

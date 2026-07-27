@@ -182,6 +182,15 @@ def _is_global_rank_zero() -> bool:
 
 
 def _configure_runtime_warning_filters() -> None:
+    # Suppress: "No device id is provided via `init_process_group` or `barrier`."
+    # Lightning's DDP strategy doesn't pass device_id to init_process_group,
+    # but the correct device is set internally — this warning is harmless.
+    warnings.filterwarnings(
+        "ignore",
+        category=UserWarning,
+        message="No device id is provided via `init_process_group`",
+        module=r"torch\.distributed\.distributed_c10d",
+    )
     warnings.filterwarnings(
         "ignore",
         category=FutureWarning,
@@ -460,7 +469,7 @@ def main():
 
     val_loader = DataLoader(
         dataset=val_dataset,
-        batch_size=len(val_dataset),
+        batch_size=args.batch_size,
         num_workers=args.num_workers,
         shuffle=False,
     )

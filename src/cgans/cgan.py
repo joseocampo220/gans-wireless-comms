@@ -109,14 +109,12 @@ class CGAN(BaseCGAN):
         # We log it (once per epoch) so you can inspect how it evolves.
         max_n = int(self.val_metric_max_samples)
         n = int(min(max_n, real_samples.shape[0]))
-        # Fixed subset for comparability across epochs.
-        if not hasattr(self, "_val_metric_idx"):
-            g = torch.Generator(device=real_samples.device).manual_seed(1234)
-            self._val_metric_idx = torch.randperm(
-                real_samples.shape[0], generator=g, device=real_samples.device
-            )[:n]
-
-        idx = self._val_metric_idx
+        # Use a deterministic random subset of this batch (recomputed for each
+        # batch so the last, potentially smaller batch doesn't cause OOB errors).
+        g = torch.Generator(device=real_samples.device).manual_seed(1234)
+        idx = torch.randperm(
+            real_samples.shape[0], generator=g, device=real_samples.device
+        )[:n]
         real_sel = real_samples[idx].detach()
         cond_sel = cond[idx].detach()
 
@@ -128,15 +126,17 @@ class CGAN(BaseCGAN):
         real_g = self.all_gather(real_sel).detach().cpu()
         fake_g = self.all_gather(fake_sel).detach().cpu()
 
-        if self.trainer is not None and self.trainer.is_global_zero:
-            rx = np.asarray(real_g).reshape(-1)
-            fx = np.asarray(fake_g).reshape(-1)
-            w = float(wasserstein_distance(rx, fx))
-            self.log(
-                "val_wasserstein",
-                w,
-                prog_bar=True,
-                on_step=False,
-                on_epoch=True,
-                sync_dist=False,
-            )
+        # All ranks compute the same Wasserstein because all_gather already
+        # pooled data across devices. Log with sync_dist=True so the metric
+        # is visible to ModelCheckpoint on every rank in DDP mode.
+        rx = np.asarray(real_g).reshape(-1)
+        fx = np.asarray(fake_g).reshape(-1)
+        w = float(wasserstein_distance(rx, fx))
+        self.log(
+            "val_wasserstein",
+            w,
+            prog_bar=True,
+            on_step=False,
+            on_epoch=True,
+            sync_dist=True,
+        )

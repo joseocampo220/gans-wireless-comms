@@ -103,6 +103,28 @@ def _metrics_two_sample(x: np.ndarray, y: np.ndarray) -> dict[str, float]:
     }
 
 
+def _resolve_normalization(
+    art: VersionArtifacts,
+) -> tuple[bool, tuple[tuple[float, float], ...]]:
+    normalize_conds = bool(
+        art.train_details.get("datasets", {}).get("train", {}).get(
+            "normalize_conds",
+            art.eval_metadata.get("normalize_conds", True),
+        )
+    )
+
+    raw_ranges = art.scenario_source.get("cond_ranges", {})
+    if art.is_scenario_run and raw_ranges:
+        ranges = tuple(
+            tuple(raw_ranges[name])
+            for name in ["m", "mu", "K", "delta", "omega"]
+        )
+    else:
+        ranges = tuple(art.ranges[name] for name in ["m", "mu", "K", "delta", "omega"])
+
+    return normalize_conds, ranges
+
+
 def run_comparison(
     *,
     art: VersionArtifacts,
@@ -123,22 +145,12 @@ def run_comparison(
         return np.array([]), np.array([]), {}, "No checkpoint found for selected model version"
 
     model = load_model_cached(str(art.checkpoint))
-    ranges = art.ranges
-    normalize_conds = bool(art.eval_metadata.get("normalize_conds", True))
+    normalize_conds, ranges = _resolve_normalization(art)
     dist_type = str(art.eval_metadata.get("dist_type", "amplitude"))
 
     cond_raw = torch.tensor([[m, mu, K, delta, omega]], dtype=torch.float32)
     if normalize_conds:
-        conds = normalize_conds_minus1_1(
-            cond_raw,
-            (
-                ranges["m"],
-                ranges["mu"],
-                ranges["K"],
-                ranges["delta"],
-                ranges["omega"],
-            ),
-        )
+        conds = normalize_conds_minus1_1(cond_raw, ranges)
     else:
         conds = cond_raw
 
@@ -198,28 +210,10 @@ def run_scenario_comparison(
 
     model = load_model_cached(str(art.checkpoint))
 
-    # Determine normalization: check datasets.train first, then eval_metadata fallback.
-    normalize_conds = bool(
-        art.train_details.get("datasets", {}).get("train", {}).get(
-            "normalize_conds",
-            art.eval_metadata.get("normalize_conds", False),
-        )
-    )
+    normalize_conds, ranges = _resolve_normalization(art)
 
     cond_raw = torch.tensor([[m, mu, K, delta, omega]], dtype=torch.float32)
     if normalize_conds:
-        # For scenario models the normalization ranges are the per-scenario
-        # param min/max values computed at training time and stored in
-        # scenario_source.cond_ranges. Using art.ranges here would return
-        # zeros (no distribution.parameter_ranges for scenario runs).
-        raw_ranges = art.scenario_source.get("cond_ranges", {})
-        if raw_ranges:
-            ranges = tuple(
-                tuple(raw_ranges[name])
-                for name in ["m", "mu", "K", "delta", "omega"]
-            )
-        else:
-            ranges = tuple(art.ranges[name] for name in ["m", "mu", "K", "delta", "omega"])
         conds = normalize_conds_minus1_1(cond_raw, ranges)
     else:
         conds = cond_raw

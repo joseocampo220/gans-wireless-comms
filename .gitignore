@@ -1,3 +1,6 @@
+# opencode internal state
+.opencode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

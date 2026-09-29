@@ -102,8 +102,9 @@ def pdf_mftr(
 
     pdf = np.zeros_like(G, dtype=float)
 
-    # precompute constants
-    base_prefactor = ((a2 * a3) ** (m / 2.0)) / (2.0 ** (m - 1) * (a4 ** (m - mu)))
+    # precompute constants in log-space to avoid overflow
+    log_base_prefactor = (m / 2.0) * np.log(a2 * a3) - (m - 1) * np.log(2.0) - (m - mu) * np.log(a4)
+    base_prefactor = np.exp(log_base_prefactor)
     # number of q terms
     q_max = int(np.floor((m - 1) / 2))
     # loop over q (small)

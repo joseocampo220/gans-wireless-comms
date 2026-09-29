@@ -15,6 +15,7 @@ REPO_ROOT = find_repo_root(Path(__file__))
 LOGS_ROOT = REPO_ROOT / "logs" / "mftr" / "cgan"
 SCENARIO_LOGS_ROOT = REPO_ROOT / "logs" / "mftr" / "cgan_scenarios"
 SCENARIOS_DATA_ROOT = REPO_ROOT / "data" / "scenarios"
+PAPER_CASES_PATH = Path(__file__).parent / "paper_cases.json"
 
 def _version_sort_key(name: str) -> tuple[int, str]:
     try:

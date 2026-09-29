@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import numpy as np
 
 import gradio as gr
@@ -13,6 +14,7 @@ from app.config import (
     DEFAULT_SEED,
     UI_PARAM_BOUNDS,
     SCENARIOS_DATA_ROOT,
+    PAPER_CASES_PATH,
 )
 from app.content import read_markdown
 from app.inference import metrics_table, run_comparison, run_scenario_comparison
@@ -94,6 +96,39 @@ def _on_model_or_extrapolation_change(
 SCENARIO_CHOICES = ["None"] + [f"Scenario {i}" for i in range(1, 7)]
 
 
+def _load_paper_cases() -> list[dict]:
+    with open(PAPER_CASES_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _build_paper_case_choices(paper_cases: list[dict]) -> list[str]:
+    choices = ["None"]
+    for fig in paper_cases:
+        for case in fig["cases"]:
+            for val in case["free_parameter_values"]:
+                label = f"{fig['figure']} {case['case_id']} ({case['free_parameter']}={val})"
+                choices.append(label)
+    return choices
+
+
+def _find_paper_case(paper_cases: list[dict], label: str) -> dict | None:
+    for fig in paper_cases:
+        for case in fig["cases"]:
+            for val in case["free_parameter_values"]:
+                candidate = f"{fig['figure']} {case['case_id']} ({case['free_parameter']}={val})"
+                if candidate == label:
+                    return {
+                        "figure": fig["figure"],
+                        "description": fig["description"],
+                        "case_id": case["case_id"],
+                        "base_parameters": case["base_parameters"],
+                        "free_parameter": case["free_parameter"],
+                        "free_parameter_values": case["free_parameter_values"],
+                        "selected_value": val,
+                    }
+    return None
+
+
 def _reload_registry(registry: dict) -> gr.update:
     """Reload both cgan and cgan_scenarios log dirs and refresh the version dropdown.
 
@@ -143,6 +178,51 @@ def _make_on_scenario_change(scenario_params: dict[int, dict[str, float]]):
     return _on_scenario_change
 
 
+def _make_on_paper_case_change(paper_cases: list[dict]):
+    """Return a callback that autofills sliders from the selected paper case."""
+
+    def _on_paper_case_change(paper_case_choice: str):
+        if not paper_case_choice or paper_case_choice == "None":
+            card = "*No paper case selected — using theoretical MFTR distribution.*"
+            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), card
+
+        case = _find_paper_case(paper_cases, paper_case_choice)
+        if case is None:
+            card = "*Paper case not found.*"
+            return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), card
+
+        params = dict(case["base_parameters"])
+        params[case["free_parameter"]] = case["selected_value"]
+
+        def _clamp(name: str, val: float) -> float:
+            lo, hi = UI_PARAM_BOUNDS[name]
+            return float(max(lo, min(hi, val)))
+
+        card_lines = [
+            f"#### {case['figure']} — {case['case_id']}",
+            f"*{case['description']}*",
+            f"- **Free parameter**: {case['free_parameter']} = {case['selected_value']}",
+            f"- **All {case['free_parameter']} values**: {', '.join(str(v) for v in case['free_parameter_values'])}",
+            "#### Parameters",
+            f"- **m**: {_clamp('m', params.get('m', 8.0)):.3f}",
+            f"- **mu**: {_clamp('mu', params.get('mu', 5.0)):.4f}",
+            f"- **K**: {_clamp('K', params.get('K', 9.0)):.3f}",
+            f"- **delta**: {_clamp('delta', params.get('delta', 0.9)):.4f}",
+            f"- **omega**: {_clamp('omega', params.get('omega', 1.0)):.4f}",
+        ]
+        card = "\n".join(card_lines)
+        return (
+            gr.update(value=_clamp("m", params.get("m", 8.0))),
+            gr.update(value=_clamp("mu", params.get("mu", 5.0))),
+            gr.update(value=_clamp("K", params.get("K", 9.0))),
+            gr.update(value=_clamp("delta", params.get("delta", 0.9))),
+            gr.update(value=_clamp("omega", params.get("omega", 1.0))),
+            card,
+        )
+
+    return _on_paper_case_change
+
+
 def _run_callback(
     version: str,
     m: float,
@@ -153,6 +233,7 @@ def _run_callback(
     n_samples: int,
     seed: int,
     scenario_choice: str,
+    paper_case_choice: str,
     registry: dict[str, VersionArtifacts],
 ):
     art = registry[version]
@@ -236,6 +317,10 @@ def build_app() -> gr.Blocks:
 
     on_scenario_change = _make_on_scenario_change(scenario_params)
 
+    paper_cases = _load_paper_cases()
+    paper_case_choices = _build_paper_case_choices(paper_cases)
+    on_paper_case_change = _make_on_paper_case_change(paper_cases)
+
     with gr.Blocks(title="MFTR cGAN Interactive Demo") as demo:
         gr.Markdown(
             "# MFTR Conditional GAN Interactive Page\n"
@@ -274,6 +359,15 @@ def build_app() -> gr.Blocks:
                         )
                         scenario_card = gr.Markdown(
                             "*No scenario selected — comparing against theoretical MFTR distribution.*"
+                        )
+
+                        paper_case_dd = gr.Dropdown(
+                            choices=paper_case_choices,
+                            value="None",
+                            label="Paper case (theoretical MFTR comparison)",
+                        )
+                        paper_case_card = gr.Markdown(
+                            "*No paper case selected — using theoretical MFTR distribution.*"
                         )
 
                         m_lo, m_hi, m_val, m_step, m_inter = _slider_settings("m", default_art)
@@ -321,18 +415,24 @@ def build_app() -> gr.Blocks:
                 )
 
                 scenario_dd.change(
-                    fn=on_scenario_change,
+                    fn=lambda sc: on_scenario_change(sc) + (gr.update(value="None"), gr.update(value="*No paper case selected — using theoretical MFTR distribution.*")),
                     inputs=[scenario_dd],
-                    outputs=slider_outputs + [scenario_card],
+                    outputs=slider_outputs + [scenario_card, paper_case_dd, paper_case_card],
+                )
+
+                paper_case_dd.change(
+                    fn=lambda pc: on_paper_case_change(pc) + (gr.update(value="None"), gr.update(value="*No scenario selected — comparing against theoretical MFTR distribution.*")),
+                    inputs=[paper_case_dd],
+                    outputs=slider_outputs + [paper_case_card, scenario_dd, scenario_card],
                 )
 
                 run_btn.click(
-                    fn=lambda v, m, mu, k, d, o, n, s, sc: _run_callback(
-                        v, m, mu, k, d, o, n, s, sc, registry
+                    fn=lambda v, m, mu, k, d, o, n, s, sc, pc: _run_callback(
+                        v, m, mu, k, d, o, n, s, sc, pc, registry
                     ),
                     inputs=[
                         version_dd, m_slider, mu_slider, k_slider,
-                        delta_slider, omega_slider, n_samples, seed, scenario_dd,
+                        delta_slider, omega_slider, n_samples, seed, scenario_dd, paper_case_dd,
                     ],
                     outputs=[qq_plot, density_plot, cdf_plot, metrics_df, error_md],
                 )

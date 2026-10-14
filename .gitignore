@@ -214,11 +214,9 @@ logs/*
 # Exceptions
 
 # Local folders
-results/*
 notebooks/*
 data/*
 !*.gitkeep
-docs/*
 
 # Latex files
 *.acn
@@ -280,3 +278,13 @@ build/*
 
 # Allow PDF output of the report to be tracked
 !report/build/main.pdf
+
+# Local source data stays out of the public repository. Generated residual
+# analysis under results/ and reviewed documentation under docs/ are shareable.
+
+# Private working documents; do not publish drafts, source notes, or inventories.
+docs/privado/
+
+# Reference PDFs may have separate redistribution terms and are not required
+# to read the report.
+docs/papers/*.pdf

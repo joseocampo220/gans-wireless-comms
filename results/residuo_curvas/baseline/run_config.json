@@ -1,0 +1,54 @@
+{
+  "output_dir": "results/residuo_curvas/baseline",
+  "diagnostics_only": false,
+  "n_sim": 200000,
+  "seed": 4242,
+  "optimizer_seed": 4242,
+  "maxiter": 40,
+  "popsize": 15,
+  "mu_grid": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "k_bounds": [
+    0.0,
+    50.0
+  ],
+  "m_bounds": [
+    0.1,
+    60.0
+  ],
+  "polish": false,
+  "paths": [
+    "data/scenarios/scenario_1/pdf_data.csv",
+    "data/scenarios/scenario_2/pdf_data.csv",
+    "data/scenarios/scenario_3/pdf_data.csv",
+    "data/scenarios/scenario_4/pdf_data.csv",
+    "data/scenarios/scenario_5/pdf_data.csv",
+    "data/scenarios/scenario_6/pdf_data.csv"
+  ],
+  "simulation_seed": 4242,
+  "bounds_K_Delta_m": [
+    [
+      0.0,
+      50.0
+    ],
+    [
+      0.0,
+      1.0
+    ],
+    [
+      0.1,
+      60.0
+    ]
+  ],
+  "fitting_cdf": "trapezoid",
+  "omega": 1.0,
+  "missing_tail_mass": "assumed zero",
+  "N_min_interpretation": "hypothetical KS benchmark; not calibrated significance",
+  "empirical_sampling": false,
+  "sampler": "sqrt-Gamma, U_i=0, theoretical normalization"
+}

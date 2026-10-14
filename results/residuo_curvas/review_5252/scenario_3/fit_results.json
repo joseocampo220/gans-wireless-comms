@@ -1,0 +1,102 @@
+{
+  "summary": {
+    "scenario": "scenario_3",
+    "original_area": 0.9943025599826207,
+    "original_omega": 0.9869860475098039,
+    "input_point_count": 66,
+    "fit_point_count": 66,
+    "exact_duplicate_rows_removed": 0,
+    "peaks_height_15pct": 10,
+    "max_cdf_integration_gap": 0.013646876519141593,
+    "K": 20.481720651300513,
+    "Delta": 0.9092464734544065,
+    "m": 4.040345902846678,
+    "mu": 1,
+    "D_KS": 0.021971025361559815,
+    "success": false,
+    "D_KS_guide_same_fit": 0.02348352286853861,
+    "max_gap_percentile": 16.030397463844018,
+    "max_gap_xi": 0.46392247310329965,
+    "signed_max_gap": -0.021971025361559815,
+    "N_min_hypothetical": 3831.573544290992,
+    "fresh_seed_gap_min": 0.02274768490086676,
+    "fresh_seed_gap_max": 0.02356268490086677,
+    "near_boundary": ""
+  },
+  "simulation_seed": 4242,
+  "optimizer_seed": 5252,
+  "candidates": [
+    {
+      "K": 20.481720651300513,
+      "Delta": 0.9092464734544065,
+      "m": 4.040345902846678,
+      "mu": 1,
+      "D_KS": 0.021971025361559815,
+      "success": false,
+      "message": "Maximum number of iterations has been exceeded.",
+      "nfev": 3645,
+      "optimizer_seed": 5252,
+      "near_boundary": []
+    },
+    {
+      "K": 12.82937011708686,
+      "Delta": 0.9508916969838582,
+      "m": 4.124024993450643,
+      "mu": 2,
+      "D_KS": 0.022706122809867613,
+      "success": false,
+      "message": "Maximum number of iterations has been exceeded.",
+      "nfev": 3645,
+      "optimizer_seed": 5252,
+      "near_boundary": []
+    },
+    {
+      "K": 22.25464743650503,
+      "Delta": 0.9252567749229577,
+      "m": 3.6661608690579364,
+      "mu": 3,
+      "D_KS": 0.023287684900866745,
+      "success": false,
+      "message": "Maximum number of iterations has been exceeded.",
+      "nfev": 3645,
+      "optimizer_seed": 5252,
+      "near_boundary": []
+    },
+    {
+      "K": 11.742168249589477,
+      "Delta": 0.96986900846438,
+      "m": 4.123603821035626,
+      "mu": 4,
+      "D_KS": 0.023681122809867672,
+      "success": false,
+      "message": "Maximum number of iterations has been exceeded.",
+      "nfev": 3645,
+      "optimizer_seed": 5252,
+      "near_boundary": []
+    },
+    {
+      "K": 34.719449223453985,
+      "Delta": 0.9134128126148696,
+      "m": 3.667546496233026,
+      "mu": 5,
+      "D_KS": 0.02378112280986766,
+      "success": false,
+      "message": "Maximum number of iterations has been exceeded.",
+      "nfev": 3645,
+      "optimizer_seed": 5252,
+      "near_boundary": []
+    }
+  ],
+  "fresh_seed_gaps": [
+    0.02356268490086677,
+    0.02274768490086676,
+    0.023392684900866767
+  ],
+  "input_path": "data/scenarios/scenario_3/pdf_data.csv",
+  "preparation": {
+    "input_point_count": 66,
+    "fit_point_count": 66,
+    "exact_duplicate_rows_removed": 0,
+    "exact_duplicate_xy_removed": []
+  }
+}

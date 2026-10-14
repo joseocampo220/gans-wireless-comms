@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from scipy.stats import gamma, ncx2
 
-SCRIPT = Path(__file__).resolve().parents[1] / "data/scenarios/fit_curvas.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts/fit_curvas.py"
 spec = importlib.util.spec_from_file_location("fit_curvas", SCRIPT)
 fit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fit)

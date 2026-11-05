@@ -1,0 +1,11 @@
+% !TeX root = ../main.tex
+\begin{center}
+    \textbf{\fontsize{14}{16}\selectfont RESUMEN}
+\end{center}
+\fontsize{12}{14}\selectfont
+El modelo Multi-Cluster Fluctuating Two-Ray (MFTR) describe el desvanecimiento inalámbrico mediante distribuciones de envolvente cuya forma puede variar notablemente con sus parámetros. Se estudia si una red generativa adversaria condicional (cGAN) puede aprender estas distribuciones y generar muestras para parámetros dentro y fuera del intervalo de entrenamiento. Se entrena una cGAN basada en perceptrones multicapa con muestras sintéticas de la envolvente MFTR, variando $\mu$ y manteniendo fijos los demás parámetros. La calidad de las muestras se evalúa frente a la referencia teórica MFTR mediante gráficos QQ, el estadístico de Kolmogorov--Smirnov, la distancia de Wasserstein unidimensional y el MSE/MAE de cuantiles. Dentro del intervalo de entrenamiento ($\mu\in[1,9]$), las muestras generadas se aproximan a la referencia. La extrapolación es menos fiable: las medianas de los errores son similares, pero aumentan las discrepancias máximas. Las pérdidas y probabilidades del discriminador se estabilizan tempranamente y por sí solas no bastan para evaluar el ajuste condicional.
+
+\vspace{10pt}
+\begin{center}
+    \textbf{Palabras clave:} redes generativas adversarias condicionales, comunicaciones inalámbricas, desvanecimiento, MFTR, interpolación, extrapolación.
+\end{center}

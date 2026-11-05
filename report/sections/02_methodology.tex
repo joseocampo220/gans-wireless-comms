@@ -1,3 +1,4 @@
+% !TeX root = ../main.tex
 We train a conditional GAN to generate MFTR envelope samples conditioned on the MFTR parameters. Each training example is a pair $(x,\mathbf{c})$, where $x\in\mathbb{R}$ is a single amplitude sample and $\mathbf{c}=[m,\mu,K,\Delta,\bar{\gamma}]$ is the conditioning vector.
 
 \subsection{Architecture}
@@ -9,12 +10,12 @@ The discriminator embeds the condition the same way, concatenates $[x,\mathrm{em
 We use the standard GAN objective implemented with \texttt{BCEWithLogitsLoss} (numerically stable because $D$ outputs logits).
 For the discriminator we use
 \begin{equation}
-\mathcal{L}_D = \mathrm{BCE}(D(x,\mathbf{c}), 0.9) + \mathrm{BCE}(D(G(\mathbf{z},\mathbf{c}),\mathbf{c}), 0),
+    \mathcal{L}_D = \mathrm{BCE}(D(x,\mathbf{c}), 0.9) + \mathrm{BCE}(D(G(\mathbf{z},\mathbf{c}),\mathbf{c}), 0),
 \end{equation}
 where the target for real samples is set to 0.9 (one-sided label smoothing).
 For the generator we use the non-saturating loss
 \begin{equation}
-\mathcal{L}_G = \mathrm{BCE}(D(G(\mathbf{z},\mathbf{c}),\mathbf{c}), 1).
+    \mathcal{L}_G = \mathrm{BCE}(D(G(\mathbf{z},\mathbf{c}),\mathbf{c}), 1).
 \end{equation}
 We update $D$ every step and update $G$ every $k$ steps (here $k=2$). Linear layers are initialized with Xavier uniform initialization.
 
@@ -27,7 +28,7 @@ We use learning rates $\mathrm{lr}_G=2.8\times 10^{-4}$ and $\mathrm{lr}_D=1.12\
 The five condition parameters are min--max normalized to $[-1,1]$ using the fixed training ranges, independently per dimension. If a parameter is fixed (low$=$high), its normalized value is set to 0.
 Both $G$ and $D$ use the same conditioning mechanism: the normalized condition vector is projected to a learned embedding of dimension 32 using the small embedding MLP described above.
 
-\subsection{Dataset generation (uniform combos and varying only $\mu$)}
+\subsection{Dataset generation (uniform combos and varying only \texorpdfstring{$\mu$}{mu})}
 We construct a conditional dataset by sampling a set of parameter combinations (\emph{combos}) uniformly within the chosen ranges, and then generating many MFTR samples for each combo.
 In this report we focus on a simplified experiment where only $\mu$ varies uniformly in $[1,9]$, while the other parameters are fixed ($m=8$, $K=9$, $\Delta=0.9$, $\bar{\gamma}=1$). This setting is useful because changing $\mu$ can move the MFTR envelope PDF from unimodal to bimodal, so it tests whether the model can smoothly adapt its output shape.
 We sample 128 training combos and 32 validation combos uniformly (disjoint split). For each combo we draw 10{,}000 training samples (and 1{,}000 validation samples) from the analytic MFTR sampler (amplitude mode). The dataset stores the combos in a tensor of shape (combos, 5) and returns samples with their corresponding condition by repeating each combo for its associated samples.

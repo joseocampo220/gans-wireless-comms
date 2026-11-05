@@ -1,0 +1,21 @@
+% !TeX root = ../main.tex
+\section{Introduction}
+
+The estimation of an underlying probability distribution from data is a fundamental problem in many fields, including wireless communications. Since a population can be fully characterized by its probability distribution, being able to estimate this distribution from data is crucial for understanding and modeling complex phenomena, generate new samples, and make predictions under given conditions, say for instance environmental factors related to the propagation of radio signals across a medium.
+
+One way to do so is to use Generative Adversarial Networks (GANs), a family of generative models that generate new samples from a target distribution by implicitly learning their underlying distribution \cite{goodfellow2014generativeadversarialnetworks}. They consist of two neural networks, a generator and a discriminator, that are trained in an adversarial manner. The generator takes random noise as input and produces synthetic samples, while the discriminator tries to distinguish between real and fake samples. Through this process, the generator learns to produce samples that are indistinguishable from real data. GANs have been successfully applied in various domains, including image generation \cite{karras2019stylebasedgeneratorarchitecturegenerative}, time series simulation \cite{fu2019time} and audio synthesis \cite{donahue2019adversarialaudiosynthesis}.
+
+In this work, we focus our attention in a variant of GANs called conditional GANs (cGANs), which allow for the generation of samples conditioned on specific input variables, enabling more control over the generated data \cite{mirza2014conditional}. Although the original cGANs paper uses categorical labels as the condition input, several works have successfully used continuous variables as conditions \cite{fu2019time}\cite{zaheer2017gan}.
+
+Our goal is to use them to capture the distribution of empirical data of outdoor terahertz (THz) wireless channels \cite{papasotiriou2022stochastic} conditioned on parameters estimated from the Multi-Cluster Fluctuating Two-Ray (MFTR) fading model \cite{sánchez2023multiclusterfluctuatingtworayfading}, such that we can later use the model to interpolate and extrapolate new data based on the empirical scenarios.
+
+The MFTR model is a generalization of the Fluctuating Two-Ray (FTR) fading model and the $\kappa-\mu$ fading model, all of which attempt to model the amount of power received at a given location when a radio signal travels and interacts with the environment in several ways. It depends on 5 parameters, $\Delta, m, \mu, K, \bar{\gamma}$ (see Fig. \ref{fig:mftr_mu_cases}) that allow extensive control of the shape of the distribution, including a transition from an unimodal to a bimodal distribution.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{images/mftr_mu_cases.pdf}
+    \caption{PDF of the MFTR signal envelope by varying $\mu$ in two different scenarios: Case A: $\Delta = 0.9$, $m = 8$, $K = 8$, $\bar{\gamma} = 2$ and Case B: $\Delta = 0.9$, $m = 4$, $K = 15$, $\bar{\gamma} = 1$. Reproduced from \cite{sánchez2023multiclusterfluctuatingtworayfading}.}
+    \label{fig:mftr_mu_cases}
+\end{figure}
+
+The experiments reported here are a first step toward this empirical objective: they use synthetic MFTR envelope samples, varying only $\mu$ while the remaining parameters are fixed. Learning from measured THz channels and varying multiple parameters remain future work.

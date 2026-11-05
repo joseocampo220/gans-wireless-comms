@@ -1,11 +1,13 @@
 {
   "latex-workshop.latex.outDir": "%DIR%/build",
+  "latex-workshop.latex.rootFile.useSubFile": false,
   "latex-workshop.latex.tools": [
     {
       "name": "latexmk-pdflatex",
-      "command": "/home/docampor/bin/latexmk",
+      "command": "latexmk",
       "args": [
         "-pdf",
+        "-cd",
         "-outdir=%OUTDIR%",
         "-auxdir=%OUTDIR%",
         "-synctex=1",
@@ -16,9 +18,10 @@
     },
     {
       "name": "latexmk-xelatex",
-      "command": "/home/docampor/bin/latexmk",
+      "command": "latexmk",
       "args": [
         "-xelatex",
+        "-cd",
         "-outdir=%OUTDIR%",
         "-auxdir=%OUTDIR%",
         "-synctex=1",
@@ -40,7 +43,7 @@
   ],
   "latex-workshop.latex.recipe.default": "latexmk (pdflatex)",
   "latex-workshop.latex.autoBuild.run": "onFileChange",
-  "latex-workshop.latexindent.path": "/home/docampor/bin/latexindent",
+  "latex-workshop.latexindent.path": "latexindent",
   "latex-workshop.view.pdf.viewer": "tab",
   "latex-workshop.view.pdf.ref.viewer": "tab"
 }

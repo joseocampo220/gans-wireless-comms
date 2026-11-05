@@ -1,0 +1,12 @@
+% !TeX root = ../main.tex
+\title{Multi-Cluster Fluctuating Two-Ray Fading Model Approximation with Conditional GANs}
+\author{José David Ocampo Rojas}
+\fontsize{10}{12}\selectfont
+\maketitle
+\begin{abstract}
+    The Multi-Cluster Fluctuating Two-Ray (MFTR) model provides a flexible description of wireless fading but yields signal-envelope distributions whose shape can change sharply with its parameters. We study whether a conditional generative adversarial network (cGAN) can learn these distributions and generate samples for parameters inside and outside the training range. We train an MLP-based cGAN on synthetic MFTR envelope samples, varying $\mu$ while keeping the remaining parameters fixed. Conditional sample quality is evaluated against the theoretical MFTR reference using QQ plots, the Kolmogorov--Smirnov statistic, one-dimensional Wasserstein distance, and quantile MSE/MAE. Within the training range ($\mu\in[1,9]$), generated samples closely match the reference. Extrapolation is less reliable: median errors are similar, but worst-case discrepancies increase. Training losses and discriminator probabilities stabilize early and alone are insufficient to assess conditional fit quality.
+\end{abstract}
+\begin{IEEEkeywords}
+    Conditional GANs, wireless communications, fading models, MFTR, interpolation, extrapolation.
+\end{IEEEkeywords}
+\IEEEpeerreviewmaketitle

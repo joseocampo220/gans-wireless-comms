@@ -1,7 +1,0 @@
-\begin{abstract}
-The Multi-Cluster Fluctuating Two-Ray (MFTR) model provides a flexible description of wireless fading but yields signal-envelope distributions whose shape can change sharply with its parameters. We study whether a conditional generative adversarial network (cGAN) can learn these distributions and generate samples for parameters inside and outside training range.
-
-We train a lightweight MLP-based cGAN on synthetic MFTR envelope samples, using a continuous condition input (here, sweeping the fading parameter $\mu$ while keeping the remaining parameters fixed). We evaluate conditional sample quality against the theoretical MFTR reference using QQ plots and distributional metrics: Kolmogorov--Smirnov statistic, 1D Wasserstein distance, and quantile MSE/MAE.
-
-Results show that within the training range ($\mu\in[1,9]$), the generated conditional samples closely match the theoretical distribution. Extrapolation beyond the training range remains feasible but is less reliable, with similar median errors yet increased worst-case discrepancies at larger $\mu$. Training curves (losses and discriminator probabilities) stabilize early and remain nearly constant, indicating that these diagnostics alone are not sufficient to assess final conditional fit quality.
-\end{abstract}

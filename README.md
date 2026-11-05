@@ -11,12 +11,16 @@ This repository explores **generative adversarial networks (GANs)** for **wirele
 	- 1D Wasserstein distance
 	- Quantile MSE/MAE
 
-## Report
-- LaTeX source: [report/main.tex](report/main.tex)
-- Build PDF:
-	- `cd report && latexmk -pdf main.tex`
+## Thesis report
+The approved thesis source is [report/main.tex](report/main.tex), with front matter
+and numbered sections under `report/`. The tracked PDF is
+[report/build/main.pdf](report/build/main.pdf). Figures are in
+[report/images/](report/images/); the existing figure-generation scripts write there.
 
-The report figures are written under [report/images/](report/images/).
+Build from `report/` with `latexmk -pdf -interaction=nonstopmode -file-line-error main.tex`.
+The build requires pdfLaTeX, BibTeX, `IEEEtran.bst`, latexmk and the LaTeX packages
+used by the document. It writes the PDF and SyncTeX data to `report/build/`.
+See [report/README.md](report/README.md) for VS Code preview and cleanup details.
 
 ## Key code locations (MFTR conditional model)
 - Core conditional model:

@@ -1,47 +1,51 @@
-\documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
-% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
-\usepackage{graphicx}
-\usepackage{textcomp}
-\usepackage{xcolor}
-\usepackage{biblatex}
+% !TeX root = main.tex
+\input{preamble}
 
-\addbibresource{references.bib}
-
-\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
-\title{Multi-Cluster Fluctuating Two-Ray Fading Model approximation with Conditional GANs}
+% --- FRONTMATTER (Single-column layout) ---
+\onecolumn
+\thispagestyle{empty}
 
-\input{sections/authors.tex}
+\input{frontmatter/01_cover_and_approval}
+\newpage
 
-\maketitle
+\input{frontmatter/02_copyright_and_publication}
+\newpage
 
-\input{sections/abstract.tex}
+\input{frontmatter/03_dedication_and_acknowledgments}
+\newpage
 
-\begin{IEEEkeywords}
-    GANs, wireless communications, fading models, MFTR
-\end{IEEEkeywords}
+\input{frontmatter/04_resumen}
+\newpage
 
-\section{Introduction}
-\input{sections/introduction}
+\input{frontmatter/05_abstract}
+\newpage
 
+\input{frontmatter/06_lists}
+\newpage
+
+% --- MAIN CONTENT (Two-column IEEE layout) ---
+\twocolumn
+
+\input{sections/00_title_author}
+\input{sections/01_introduction}
 \section{Methodology}
-\input{sections/methodology}
-
+\input{sections/02_methodology}
 \section{Results}
-\input{sections/results}
-
+\input{sections/03_results}
 \section{Conclusion}
-\input{sections/conclusion}
+\input{sections/04_conclusion}
+\section{Future Work}
+\input{sections/05_future_work}
 
-\section{Future work}
-\input{sections/future_work}
+% --- BIBLIOGRAPHY ---
+\ifCLASSOPTIONcaptionsoff
+    \newpage
+\fi
 
-\nocite{*}
-\printbibliography
+\bibliographystyle{IEEEtran}
+\nocite{zheng2021continuousconditionalgenerativeadversarial}
+\bibliography{references}
 
 \end{document}

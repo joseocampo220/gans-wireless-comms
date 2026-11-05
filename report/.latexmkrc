@@ -3,5 +3,5 @@
 $out_dir = 'build';
 $aux_dir = 'build';
 
-# Use user-space biber install (needed for biblatex).
-$biber = '/home/docampor/bin/biber';
+# Use pdfLaTeX with SyncTeX; latexmk invokes BibTeX for the IEEE bibliography.
+$pdflatex = 'pdflatex -synctex=1 %O %S';

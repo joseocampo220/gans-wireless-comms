@@ -1,3 +1,4 @@
+% !TeX root = ../main.tex
 Our evaluation compares generated conditional samples against theoretical MFTR samples using (i) interpolation cases (conditions inside the training range) and (ii) extrapolation cases (conditions outside the training range). For each case, we use $n=5000$ samples and compute the Kolmogorov--Smirnov statistic (KS), 1D Wasserstein distance, and the MSE/MAE between sorted empirical quantiles.
 
 \subsection{Conditional interpolation vs extrapolation}
@@ -10,28 +11,29 @@ This is also reflected in the metrics in Table\ \ref{tab:cgan_v16_cond_metrics}.
 	\caption{Conditional metrics (min / median / max) for interpolation (in-range) and extrapolation (out-of-range).}
 	\label{tab:cgan_v16_cond_metrics}
 	\small
-	\begin{tabular}{lcc}
-		\hline
-		Metric & In-range (interp.) & Out-of-range (extra.) \\
-		\hline
-		KS stat. & 0.021 / 0.064 / 0.075 & 0.055 / 0.065 / 0.146 \\
-		Wasserstein & 0.016 / 0.045 / 0.050 & 0.025 / 0.045 / 0.109 \\
-		MSE & $3.87\times 10^{-4}$ / 0.0024 / 0.0031 & 0.0012 / 0.0026 / 0.014 \\
-		MAE & 0.016 / 0.045 / 0.050 & 0.025 / 0.045 / 0.109 \\
-		\hline
-	\end{tabular}
+	\resizebox{\columnwidth}{!}{%
+		\begin{tabular}{lcc}
+			\hline
+			Metric      & In-range (interp.)                     & Out-of-range (extra.)   \\
+			\hline
+			KS stat.    & 0.021 / 0.064 / 0.075                  & 0.055 / 0.065 / 0.146   \\
+			Wasserstein & 0.016 / 0.045 / 0.050                  & 0.025 / 0.045 / 0.109   \\
+			MSE         & $3.87\times 10^{-4}$ / 0.0024 / 0.0031 & 0.0012 / 0.0026 / 0.014 \\
+			MAE         & 0.016 / 0.045 / 0.050                  & 0.025 / 0.045 / 0.109   \\
+			\hline
+		\end{tabular}}
 \end{table}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=\columnwidth]{../images/cgan_v16_interpolation.pdf}
+	\includegraphics[width=\columnwidth]{images/cgan_v16_interpolation.pdf}
 	\caption{Conditional evaluation (interpolation): three in-range examples.}
 	\label{fig:cgan_v16_interp}
 \end{figure}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=\columnwidth]{../images/cgan_v16_extrapolation.pdf}
+	\includegraphics[width=\columnwidth]{images/cgan_v16_extrapolation.pdf}
 	\caption{Conditional evaluation (extrapolation): three out-of-range examples.}
 	\label{fig:cgan_v16_extra}
 \end{figure}
@@ -44,14 +46,14 @@ The predicted discriminator probabilities for real and fake samples also remain 
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=\columnwidth]{../images/cgan_v16_training_losses.pdf}
+	\includegraphics[width=\columnwidth]{images/cgan_v16_training_losses.pdf}
 	\caption{Training curves for generator and discriminator losses.}
 	\label{fig:cgan_v16_train_losses}
 \end{figure}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=\columnwidth]{../images/cgan_v16_training_probs.pdf}
+	\includegraphics[width=\columnwidth]{images/cgan_v16_training_probs.pdf}
 	\caption{Discriminator predicted probabilities for real and fake samples.}
 	\label{fig:cgan_v16_train_probs}
 \end{figure}
